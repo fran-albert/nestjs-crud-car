@@ -7,4 +7,8 @@ export class CreateCarDto {
   @IsString()
   @IsOptional()
   color: string;
+
+  @IsString()
+  @IsOptional()
+  owner: string;
 }

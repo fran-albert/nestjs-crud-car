@@ -1,25 +1,37 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateCarDto } from './dto/create-car.dto';
 import { UpdateCarDto } from './dto/update-car.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Car } from './entities/car.entity';
 import { Repository } from 'typeorm';
+import { ServiceResponse } from '../utils/service-response';
+import { Owner } from 'src/owners/entities/owner.entity';
 
 @Injectable()
 export class CarsService {
   constructor(
     @InjectRepository(Car)
-    private carRepository: Repository<Car>,
+    private readonly carRepository: Repository<Car>,
+
+    @InjectRepository(Owner)
+    private readonly ownerRepository: Repository<Owner>,
   ) {}
 
   async create(createCarDto: CreateCarDto) {
-    if (!createCarDto.brand) {
-      return 'Brand is required';
+    const owner = await this.ownerRepository.findOneBy({
+      name: createCarDto.owner,
+    });
+
+    if (!owner) {
+      throw new BadRequestException('Owner not found');
     }
 
-    const data = await this.carRepository.save(createCarDto);
+    const data = await this.carRepository.save({
+      ...createCarDto,
+      owner,
+    });
 
-    return data;
+    return { data: data };
   }
 
   async findAll() {
@@ -32,31 +44,35 @@ export class CarsService {
     const data = await this.carRepository.findOneBy({ id });
 
     if (!data) {
-      return 'Data not found';
+      throw new BadRequestException('Data not found');
     }
 
     return { data: data };
   }
 
   async update(id: number, updateCarDto: UpdateCarDto) {
-    if (!updateCarDto.brand) {
-      return 'Brand is required';
-    }
+    // if (!updateCarDto.brand) {
+    //   return new ServiceResponse(false, 'Brand is required');
+    // }
 
-    const data = await this.carRepository.update(id, updateCarDto);
+    // const updateResult = await this.carRepository.update(id, updateCarDto);
+    // if (updateResult.affected === 0) {
+    //   return new ServiceResponse(false, 'No car found with the given id');
+    // }
 
-    return { data: data, message: 'Car updated successfully' };
+    // const updatedCar = await this.carRepository.findOneBy({ id });
+    return new ServiceResponse(true, 'Car updated successfully');
   }
 
   async remove(id: number) {
-    const dataFind = await this.carRepository.findOneBy({ id });
+    const car = await this.carRepository.findOneBy({ id });
 
-    if (!dataFind) {
-      return 'Data not found';
+    if (!car) {
+      throw new BadRequestException('Car not found');
     }
 
-    const data = await this.carRepository.softDelete(id);
+    await this.carRepository.softDelete(id);
 
-    return { data: data, message: 'Car deleted successfully' };
+    return new ServiceResponse(true, 'Car deleted successfully');
   }
 }

@@ -3,10 +3,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CarsModule } from './cars/cars.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { OwnersModule } from './owners/owners.module';
 
 @Module({
   imports: [
-    CarsModule,
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: 'localhost',
@@ -17,6 +17,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       autoLoadEntities: true,
       synchronize: true,
     }),
+    CarsModule,
+    OwnersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
