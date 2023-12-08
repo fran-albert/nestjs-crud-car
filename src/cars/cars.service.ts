@@ -4,7 +4,6 @@ import { UpdateCarDto } from './dto/update-car.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Car } from './entities/car.entity';
 import { Repository } from 'typeorm';
-import { ServiceResponse } from '../utils/service-response';
 import { Owner } from 'src/owners/entities/owner.entity';
 
 @Injectable()
@@ -51,17 +50,30 @@ export class CarsService {
   }
 
   async update(id: number, updateCarDto: UpdateCarDto) {
-    // if (!updateCarDto.brand) {
-    //   return new ServiceResponse(false, 'Brand is required');
-    // }
+    const car = await this.carRepository.findOneBy({ id });
 
-    // const updateResult = await this.carRepository.update(id, updateCarDto);
-    // if (updateResult.affected === 0) {
-    //   return new ServiceResponse(false, 'No car found with the given id');
-    // }
+    if (!car) {
+      throw new BadRequestException('Car not found');
+    }
 
-    // const updatedCar = await this.carRepository.findOneBy({ id });
-    return new ServiceResponse(true, 'Car updated successfully');
+    let owner;
+    if (updateCarDto.owner) {
+      owner = await this.ownerRepository.findOneBy({
+        name: updateCarDto.owner,
+      });
+
+      if (!owner) {
+        throw new BadRequestException('Owner not found');
+      }
+    }
+
+    const data = await this.carRepository.save({
+      ...car,
+      ...updateCarDto,
+      owner,
+    });
+
+    return { data: data };
   }
 
   async remove(id: number) {
@@ -71,8 +83,8 @@ export class CarsService {
       throw new BadRequestException('Car not found');
     }
 
-    await this.carRepository.softDelete(id);
+    const data = await this.carRepository.softDelete(id);
 
-    return new ServiceResponse(true, 'Car deleted successfully');
+    return { data: data };
   }
 }
